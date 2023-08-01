@@ -160,7 +160,9 @@ if ($method === 'POST') {
             // File upload successful
             // Now update the database with the new file path
             $stmt = $pdo->prepare('UPDATE HomePage SET images = ? WHERE id = ?');
-            $result = $stmt->execute([$filePath, $id]); // Assuming you have the ID of the row to update in $id variable
+
+            $dbPath = 'http://' . $_SERVER['HTTP_HOST']. '/img/' . $filename;
+            $result = $stmt->execute([$dbPath, $id]); // Assuming you have the ID of the row to update in $id variable
 
             if ($result) {
                 // Fetch the updated data from the database
