@@ -21,6 +21,9 @@ header('Access-Control-Allow-Headers: Content-Type'); // 如果您使用了自�
 /// 處理 HTTP 請求
 $method = $_SERVER['REQUEST_METHOD'];
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 
 if ($method === 'POST') {
   $action = $_POST['action'] ?? '';
@@ -60,22 +63,30 @@ if ($method === 'POST') {
         $id = $_POST['id'] ?? null;
         $name = $_POST['name'];
         $category = $_POST['category'];
-        $images = $_POST['images']; // 不使用 json_encode
+        $imageURL = $_POST['images']; // URL of the image
         $description = $_POST['description'];
         $videoLink = $_POST['videoLink'];
         $type = $_POST['type'];
-        
+
+        // Download the image from the URL
+        $imageFilename = basename($imageURL);
+        $localImagePath = 'imgs/' . $imageFilename; // 存儲在 'imgs/' 目錄中
+
+        // 使用 file_get_contents 和 file_put_contents 來下載和儲存圖片
+        $imageData = file_get_contents($imageURL);
+        file_put_contents($localImagePath, $imageData);
+
         if ($id !== null) {
           $stmt = $pdo->prepare('UPDATE HomePage SET name = ?, category = ?, images = ?, description = ?, videoLink = ?, type = ? WHERE id = ?');
-          $result = $stmt->execute([$name, $category, $images, $description, $videoLink, $type, $id]);
-          
+          $result = $stmt->execute([$name, $category, $localImagePath, $description, $videoLink, $type, $id]);
+
           $stmtN = $pdo->query('SELECT * FROM HomePage');
           $dataN = $stmtN->fetchAll(PDO::FETCH_ASSOC);
 
           if ($result) {
-            echo json_encode(['code' => 0, 'message' => '更改成功','data' => $dataN]);
+            echo json_encode(['code' => 0, 'message' => '更改成功', 'data' => $dataN]);
           } else {
-            echo json_encode(['code' => 1, 'message' => '更改失敗','data' => $dataN]);
+            echo json_encode(['code' => 1, 'message' => '更改失敗', 'data' => $dataN]);
           }
         } else {
           echo json_encode(['code' => 1, 'message' => '更改失敗，請提供要更改的ID']);
@@ -134,6 +145,38 @@ if ($method === 'POST') {
           echo json_encode(['code' => 1, 'message' => '找不到指定的ID']);
         }
         break;
+       case '5':
+    // Check if the file is uploaded successfully
+    if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+        $id = $_POST['id']; // 假設從 POST 請求中獲取了要更新的資料庫記錄的 ID
+        $currentDirectory = getcwd(); // 當前工作目錄的絕對路徑
+        $parentDirectory = dirname($currentDirectory); // 上一頁的目錄路徑
+        $imgDirectory = $parentDirectory . '/img/'; // 上一頁的 img 資料夾路徑
+        $filename = uniqid() . '.jpg'; // 生成唯一的檔名
+        $filePath = $imgDirectory . $filename;
+
+        // Move the uploaded file to the target directory
+        if (move_uploaded_file($_FILES['file']['tmp_name'], $filePath)) {
+            // File upload successful
+            // Now update the database with the new file path
+            $stmt = $pdo->prepare('UPDATE HomePage SET images = ? WHERE id = ?');
+            $result = $stmt->execute([$filePath, $id]); // Assuming you have the ID of the row to update in $id variable
+
+            if ($result) {
+                // Fetch the updated data from the database
+                $stmtN = $pdo->query('SELECT * FROM HomePage');
+                $dataN = $stmtN->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode(['code' => 0, 'message' => '檔案上傳成功', 'data' => $dataN]);
+            } else {
+                echo json_encode(['code' => 1, 'message' => '更新資料庫失敗']);
+            }
+        } else {
+            echo json_encode(['code' => 1, 'message' => '檔案移動失敗']);
+        }
+    } else {
+        echo json_encode(['code' => 1, 'message' => '檔案上傳失敗']);
+    }
+    break;
       default:
         echo json_encode(['code' => 1, 'message' => '不支援的操作']);
         break;
