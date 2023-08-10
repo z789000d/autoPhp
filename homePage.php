@@ -28,7 +28,6 @@ ini_set('display_errors', 1);
 if ($method === 'POST') {
   $action = $_POST['action'] ?? '';
   
-
   try {
     switch ($action) {
       case '0':
@@ -68,17 +67,10 @@ if ($method === 'POST') {
         $videoLink = $_POST['videoLink'];
         $type = $_POST['type'];
 
-        // Download the image from the URL
-        $imageFilename = basename($imageURL);
-        $localImagePath = 'imgs/' . $imageFilename; // 存儲在 'imgs/' 目錄中
-
-        // 使用 file_get_contents 和 file_put_contents 來下載和儲存圖片
-        $imageData = file_get_contents($imageURL);
-        file_put_contents($localImagePath, $imageData);
-
+  
         if ($id !== null) {
-          $stmt = $pdo->prepare('UPDATE HomePage SET name = ?, category = ?, images = ?, description = ?, videoLink = ?, type = ? WHERE id = ?');
-          $result = $stmt->execute([$name, $category, $localImagePath, $description, $videoLink, $type, $id]);
+          $stmt = $pdo->prepare('UPDATE HomePage SET name = ?, category = ?, description = ?, videoLink = ?, type = ? WHERE id = ?');
+          $result = $stmt->execute([$name, $category, $description, $videoLink, $type, $id]);
 
           $stmtN = $pdo->query('SELECT * FROM HomePage');
           $dataN = $stmtN->fetchAll(PDO::FETCH_ASSOC);
