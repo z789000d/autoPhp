@@ -495,6 +495,66 @@ if ($method === 'POST') {
         echo json_encode(['code' => 1, 'message' => '發生其他錯誤']);
     }
     break;
+
+     case '9':
+                // Check if the file is uploaded successfully
+            if (isset($_FILES['file']) && $_FILES['file']['error'] === UPLOAD_ERR_OK) {
+                $id = $_POST['id'];
+                // 假設從 POST 請求中獲取了要更新的資料庫記錄的 ID
+                $currentDirectory = getcwd();
+                // 當前工作目錄的絕對路徑
+                $parentDirectory = dirname($currentDirectory);
+                // 上一頁的目錄路徑
+                $imgDirectory = $parentDirectory . '/img/';
+                // 上一頁的 img 資料夾路徑
+                $filename = uniqid() . '.jpg';
+                // 生成唯一的檔名
+                $filePath = $imgDirectory . $filename;
+                // Move the uploaded file to the target directory
+                if (move_uploaded_file($_FILES['file']['tmp_name'], $filePath)) {
+                    // File upload successful
+                    // Now update the database with the new file path
+                    $stmt = $pdo->prepare('UPDATE ProductPageImage SET imageUrl = ? WHERE id = ?');
+                    $dbPath = 'http://' . $_SERVER['HTTP_HOST']. '/img/' . $filename;
+                    $result = $stmt->execute([$dbPath, $id]);
+                    // Assuming you have the ID of the row to update in $id variable
+                    if ($result) {
+                        // 重新查詢資料並回傳
+        $stmt = $pdo->prepare("SELECT ProductPage.id, ProductPage.category, ProductPage.name, ProductPage.description, ProductPage.videoLink, ProductPage.imageId, ProductPageImage.id AS imageId, ProductPageImage.imageUrl FROM ProductPage LEFT JOIN ProductPageImage ON ProductPage.id = ProductPageImage.imageId ORDER BY ProductPage.id");
+        $stmt->execute();
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $data = [];
+        foreach ($result as $row) {
+            $imageData = [
+                'id' => $row['imageId'],
+                'imageUrl' => $row['imageUrl'],
+                'imageId' => $row['id']
+            ];
+            if (!isset($data[$row['id']])) {
+                $data[$row['id']] = [
+                    'id' => $row['id'],
+                    'category' => $row['category'],
+                    'name' => $row['name'],
+                    'description' => $row['description'],
+                    'videoLink' => $row['videoLink'],
+                    'image' => []
+                ];
+            }
+            $data[$row['id']]['image'][] = $imageData;
+        }
+        // 將關聯陣列轉換為索引陣列
+        $data = array_values($data);
+        echo json_encode(['code' => 0, 'data' => $data]);
+                    } else {
+                        echo json_encode(['code' => 1, 'message' => '更新資料庫失敗']);
+                    }
+                } else {
+                    echo json_encode(['code' => 1, 'message' => '檔案移動失敗']);
+                }
+            } else {
+                echo json_encode(['code' => 1, 'message' => '檔案上傳失敗']);
+            }
+            break;
             default:
                             echo json_encode(['code' => 1, 'message' => '不支援的操作']);
             break;
