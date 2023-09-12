@@ -55,9 +55,15 @@ if ($method === 'POST') {
             case '1':
                                         // 新增操作
             $name = $_POST['name'];
-            $stmtInsert = $pdo->prepare("INSERT INTO CataloguePage (name) VALUES (:name)");
+            $imageUrl = $_POST['imageUrl'];
+            $stmtInsert = $pdo->prepare("INSERT INTO CataloguePage (name, imageId) VALUES (:name, :imageId)");
             $stmtInsert->bindParam(':name', $name);
+            $stmtInsert->bindParam(':imageId', $imageId);
+
+            // 執行插入操作
             $stmtInsert->execute();
+
+            // 獲取新插入的資料的 id
             $imageId = $pdo->lastInsertId();
             // Get the auto-incremented id
             $stmtInsertImage = $pdo->prepare("INSERT INTO CataloguePageImage (imageId, imageUrl) VALUES (:imageId, :imageUrl)");
